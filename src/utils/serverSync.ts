@@ -7,7 +7,7 @@
  * - اگر سرور در دسترس نباشد (مثلاً پیش‌نمایش استاتیک)، برنامه با localStorage کار می‌کند.
  */
 
-const SYNC_KEY_RE = /^(autopardeh_|auto_pardeh_)[A-Za-z0-9_]+$/;
+const SYNC_KEY_RE = /^(autopardeh_|auto_pardeh_|drapino_)[A-Za-z0-9_]+$/;
 const DEBOUNCE_MS = 500;
 const OLD_BRAND_RE = /اتو[\u200c\u200f ]*پرده/g;
 
@@ -15,16 +15,8 @@ let serverOnline: boolean | null = null; // null = هنوز بررسی نشده
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 const pending = new Map<string, unknown>();
 
-/** کلیدهایی که مخصوص هر دستگاه/نشست هستند و هرگز روی سرور مشترک ذخیره نمی‌شوند */
-const LOCAL_ONLY_KEYS = new Set([
-  'autopardeh_current_user', // نشست ورود
-  'autopardeh_selected_city',
-  'autopardeh_city_chosen',
-  'auto_pardeh_notification_prefs_v1',
-]);
-
 export function isSyncedKey(key: string): boolean {
-  return SYNC_KEY_RE.test(key) && !LOCAL_ONLY_KEYS.has(key);
+  return SYNC_KEY_RE.test(key);
 }
 
 export function isServerOnline(): boolean {

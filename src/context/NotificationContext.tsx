@@ -230,13 +230,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, []);
 
-  // Save to localStorage
+  // Save to database/localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(preferences));
-    } catch {
-      // ignore
-    }
+    saveStored(STORAGE_KEY_PREFS, preferences);
   }, [preferences]);
 
   useEffect(() => {

@@ -105,6 +105,7 @@ import { CitySelectModal } from './components/CitySelectModal';
 import { CityTopVendorsSection } from './components/CityTopVendorsSection';
 import { User, Store, ShieldCheck, Building2 } from 'lucide-react';
 import { loadStored, saveStored, removeStored, getStoredString, setStoredString, jalaliDateAfterDays } from './utils/storage';
+import { createDBOrder, createDBUser, createDBVendor, updateDBOrder, updateDBVendor, createDBInvoice, createDBReview, fetchDBUsers, fetchDBOrders, fetchDBVendors } from './utils/dbApi';
 import {
   RestrictionsData,
   RestrictionSettings,
@@ -212,6 +213,59 @@ function DrapinoMain() {
   const [orders, setOrders] = useState<VisitRequest[]>(() => {
     return loadStored('autopardeh_orders', INITIAL_REQUESTS);
   });
+
+  // Hydrate state from backend Relational Database API on initial app load
+  useEffect(() => {
+    async function hydrateFromRelationalDB() {
+      try {
+        const [dbOrders, dbUsers, dbVendors] = await Promise.all([
+          fetchDBOrders(),
+          fetchDBUsers(),
+          fetchDBVendors()
+        ]);
+
+        if (dbOrders && dbOrders.length > 0) {
+          setOrders((prev) => {
+            const merged = [...prev];
+            dbOrders.forEach((dbo) => {
+              if (!merged.some((m) => m.orderNumber === dbo.order_number)) {
+                merged.unshift({
+                  id: `ord-db-${dbo.id}`,
+                  orderNumber: dbo.order_number || `AP-${dbo.id}`,
+                  customerName: dbo.customer_name,
+                  phone: dbo.phone,
+                  province: dbo.province,
+                  city: dbo.city,
+                  district: dbo.district,
+                  address: dbo.address,
+                  floorAndUnit: dbo.floor_and_unit || '',
+                  rooms: typeof dbo.rooms_json === 'string' ? JSON.parse(dbo.rooms_json) : (dbo.rooms_json || ['سالن']),
+                  serviceCategory: 'curtain',
+                  approximateWindows: dbo.approximate_windows || 1,
+                  approximateWidthMeters: dbo.approximate_width_meters || 3.0,
+                  preferredStyles: typeof dbo.preferred_styles_json === 'string' ? JSON.parse(dbo.preferred_styles_json) : (dbo.preferred_styles_json || []),
+                  preferredDate: dbo.preferred_date,
+                  timeSlot: dbo.time_slot,
+                  notes: dbo.notes || '',
+                  depositAmount: dbo.deposit_amount || 350000,
+                  depositStatus: (dbo.deposit_status as any) || 'paid',
+                  claimCost: 550000,
+                  status: 'bidding',
+                  reRouteCount: 0,
+                  createdAt: dbo.preferred_date,
+                  timeline: [],
+                });
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error('Failed hydrating from Relational DB:', err);
+      }
+    }
+    hydrateFromRelationalDB();
+  }, []);
 
   const [vendors, setVendors] = useState<CurtainVendor[]>(() => {
     return loadStored('autopardeh_vendors', INITIAL_VENDORS);
@@ -622,9 +676,7 @@ function DrapinoMain() {
   }, [vendorSubmissions]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CATALOG_CATEGORIES_STORAGE_KEY, JSON.stringify(catalogCategories));
-    } catch { /* */ }
+    saveStored(CATALOG_CATEGORIES_STORAGE_KEY, catalogCategories);
   }, [catalogCategories]);
 
   // همگام‌سازی دائمی فیلترهای صفحه اصلی با دسته‌بندی واحد
@@ -1070,6 +1122,27 @@ function DrapinoMain() {
     setOrders([newOrder, ...orders]);
     setIsBookingModalOpen(false);
 
+    // Sync directly with backend relational DB (/api/v1/db/orders)
+    createDBOrder({
+      order_number: newOrderNumber,
+      customer_name: newOrder.customerName,
+      phone: newOrder.phone,
+      province: newOrder.province,
+      city: newOrder.city,
+      district: newOrder.district,
+      address: newOrder.address,
+      floor_and_unit: newOrder.floorAndUnit,
+      rooms_json: newOrder.rooms,
+      approximate_windows: newOrder.approximateWindows,
+      approximate_width_meters: newOrder.approximateWidthMeters,
+      preferred_styles_json: newOrder.preferredStyles,
+      preferred_date: newOrder.preferredDate,
+      time_slot: newOrder.timeSlot,
+      notes: newOrder.notes,
+      deposit_amount: newOrder.depositAmount,
+      deposit_status: newOrder.depositStatus
+    }).catch((e) => console.error('Failed syncing order with relational DB:', e));
+
     // If Buy Box assigned, notify the priority vendor
     if (isBuyBoxAssigned && buyBoxTargetVendorName) {
       addNotification({
@@ -1135,6 +1208,13 @@ function DrapinoMain() {
 
     // Deduct lead fee from vendor wallet
     const newBalance = currentBalance - leadCost;
+    updateDBVendor(vendor.id, { wallet_balance: newBalance }).catch((e) => console.error(e));
+    updateDBOrder(orderId, {
+      status: 'assigned',
+      assigned_vendor_id: vendor.id,
+      assigned_vendor_name: vendorName || vendor.name,
+      assigned_vendor_phone: vendorPhone || vendor.phone,
+    }).catch((e) => console.error(e));
     const transaction: WalletTransaction = {
       id: `tx-${Date.now()}`,
       vendorId: vendor.id,
@@ -1529,6 +1609,19 @@ function DrapinoMain() {
       return o;
     }));
 
+    createDBInvoice({
+      order_id: Number(orderId.replace(/\D/g, '')) || 1,
+      invoice_number: invoice.invoiceNumber,
+      vendor_id: invoice.vendorId,
+      vendor_name: invoice.vendorName,
+      vendor_phone: (invoice as any).vendorPhone || '',
+      subtotal: invoice.subtotal,
+      final_payable: invoice.finalPayable,
+      issued_at: invoice.issuedAt,
+    }).catch((e) => console.error(e));
+
+    updateDBOrder(orderId, { status: 'visited' }).catch((e) => console.error(e));
+
     // Notify customer about invoice
     addNotification({
       type: 'order_assigned',
@@ -1716,6 +1809,18 @@ function DrapinoMain() {
         return v;
       })
     );
+
+    createDBReview({
+      order_id: Number(reviewData.orderId?.replace(/\D/g, '')) || 0,
+      order_number: reviewData.orderNumber,
+      vendor_id: reviewData.vendorId,
+      customer_name: reviewData.customerName,
+      customer_phone: (reviewData as any).customerPhone || '',
+      customer_city: (reviewData as any).customerCity || 'تهران',
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      review_date: dateStr,
+    }).catch((e) => console.error(e));
 
     // Add confirmation notifications
     addNotification({
