@@ -229,3 +229,83 @@ export async function createDBReview(review: DBReview): Promise<boolean> {
     return false;
   }
 }
+
+// Create a support ticket in relational database
+export async function createDBTicket(ticket: {
+  ticket_uid?: string;
+  ticket_number?: string;
+  customer_name: string;
+  customer_phone: string;
+  subject: string;
+  type?: string;
+  status?: string;
+}): Promise<boolean> {
+  try {
+    const res = await fetch('/api/v1/db/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ticket)
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    console.error('Failed to create ticket in DB API:', e);
+    return false;
+  }
+}
+
+// Create a feedback item in relational database
+export async function createDBFeedback(feedback: {
+  feedback_uid?: string;
+  code?: string;
+  kind: string;
+  title: string;
+  description: string;
+  section: string;
+  severity?: string;
+  steps_to_reproduce?: string;
+  author_name: string;
+  author_role: string;
+  contact?: string;
+}): Promise<boolean> {
+  try {
+    const res = await fetch('/api/v1/db/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(feedback)
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    console.error('Failed to create feedback in DB API:', e);
+    return false;
+  }
+}
+
+// Create an escrow payment in relational database
+export async function createDBEscrowPayment(escrow: {
+  payment_uid?: string;
+  order_id: string;
+  order_number: string;
+  vendor_id: string;
+  vendor_name: string;
+  customer_name: string;
+  kind: string;
+  amount: number;
+  tracking_code: string;
+  status?: string;
+  paid_at?: string;
+}): Promise<boolean> {
+  try {
+    const res = await fetch('/api/v1/db/escrow/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(escrow)
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    console.error('Failed to create escrow payment in DB API:', e);
+    return false;
+  }
+}

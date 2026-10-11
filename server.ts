@@ -152,6 +152,107 @@ app.get('/api/v1/db/users', (_req, res) => {
   }
 });
 
+app.get('/api/v1/db/tickets', (_req, res) => {
+  try {
+    const tickets = dbRelational.prepare('SELECT * FROM support_tickets ORDER BY id DESC').all();
+    res.json({ success: true, data: tickets });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/tickets', (req, res) => {
+  try {
+    const { ticket_uid, ticket_number, customer_name, customer_phone, subject, type, status } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO support_tickets (ticket_uid, ticket_number, customer_name, customer_phone, subject, type, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      ticket_uid || `tck-${Date.now()}`,
+      ticket_number || `TCK-${Math.floor(1000 + Math.random() * 9000)}`,
+      customer_name,
+      customer_phone,
+      subject,
+      type || 'support',
+      status || 'investigating'
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/feedback', (_req, res) => {
+  try {
+    const feedback = dbRelational.prepare('SELECT * FROM feedback_items ORDER BY id DESC').all();
+    res.json({ success: true, data: feedback });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/feedback', (req, res) => {
+  try {
+    const { feedback_uid, code, kind, title, description, section, severity, steps_to_reproduce, author_name, author_role, contact } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO feedback_items (feedback_uid, code, kind, title, description, section, severity, steps_to_reproduce, author_name, author_role, contact)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      feedback_uid || `fb-${Date.now()}`,
+      code || `FB-${Math.floor(1000 + Math.random() * 9000)}`,
+      kind,
+      title,
+      description,
+      section,
+      severity || null,
+      steps_to_reproduce || null,
+      author_name,
+      author_role,
+      contact || null
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/escrow/payments', (_req, res) => {
+  try {
+    const payments = dbRelational.prepare('SELECT * FROM escrow_payments ORDER BY id DESC').all();
+    res.json({ success: true, data: payments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/escrow/payments', (req, res) => {
+  try {
+    const { payment_uid, order_id, order_number, vendor_id, vendor_name, customer_name, kind, amount, tracking_code, status, paid_at } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO escrow_payments (payment_uid, order_id, order_number, vendor_id, vendor_name, customer_name, kind, amount, tracking_code, status, paid_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      payment_uid || `esc-${Date.now()}`,
+      order_id,
+      order_number,
+      vendor_id,
+      vendor_name,
+      customer_name,
+      kind,
+      amount,
+      tracking_code,
+      status || 'held',
+      paid_at || new Date().toISOString()
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/v1/db/users', (req, res) => {
   try {
     const { user_uid, name, phone, email, role, vendor_id, store_name, province, city, district, address, floor_and_unit } = req.body;

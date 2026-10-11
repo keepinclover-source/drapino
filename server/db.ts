@@ -252,6 +252,125 @@ export function initRelationalDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS blog_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_uid TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      excerpt TEXT,
+      content TEXT NOT NULL,
+      category TEXT NOT NULL,
+      image_url TEXT,
+      read_time_minutes INTEGER DEFAULT 5,
+      views_count INTEGER DEFAULT 0,
+      is_published INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS custom_pages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_uid TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      content TEXT NOT NULL,
+      meta_description TEXT,
+      is_published INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS site_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL UNIQUE,
+      value_json TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_uid TEXT NOT NULL UNIQUE,
+      ticket_number TEXT NOT NULL UNIQUE,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'support',
+      status TEXT NOT NULL DEFAULT 'investigating',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS ticket_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      sender_role TEXT NOT NULL,
+      sender_name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      attachments_json TEXT,
+      timestamp TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS feedback_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      feedback_uid TEXT NOT NULL UNIQUE,
+      code TEXT NOT NULL UNIQUE,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      section TEXT NOT NULL,
+      severity TEXT,
+      steps_to_reproduce TEXT,
+      author_name TEXT NOT NULL,
+      author_role TEXT NOT NULL,
+      contact TEXT,
+      status TEXT NOT NULL DEFAULT 'new',
+      voters_json TEXT,
+      admin_reply TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS escrow_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payment_uid TEXT NOT NULL UNIQUE,
+      order_id TEXT NOT NULL,
+      order_number TEXT NOT NULL,
+      vendor_id TEXT NOT NULL,
+      vendor_name TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      tracking_code TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'held',
+      paid_at TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS escrow_withdrawals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      withdrawal_uid TEXT NOT NULL UNIQUE,
+      vendor_id TEXT NOT NULL,
+      vendor_name TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      sheba TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'processing',
+      requested_at TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS buy_box_reservations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reservation_uid TEXT NOT NULL UNIQUE,
+      vendor_id TEXT NOT NULL,
+      vendor_name TEXT NOT NULL,
+      vendor_city TEXT NOT NULL,
+      date_persian TEXT NOT NULL,
+      date_iso TEXT NOT NULL,
+      price_paid INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'reserved',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Seed default data if operational_cities table is empty

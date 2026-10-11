@@ -105,7 +105,7 @@ import { CitySelectModal } from './components/CitySelectModal';
 import { CityTopVendorsSection } from './components/CityTopVendorsSection';
 import { User, Store, ShieldCheck, Building2 } from 'lucide-react';
 import { loadStored, saveStored, removeStored, getStoredString, setStoredString, jalaliDateAfterDays } from './utils/storage';
-import { createDBOrder, createDBUser, createDBVendor, updateDBOrder, updateDBVendor, createDBInvoice, createDBReview, fetchDBUsers, fetchDBOrders, fetchDBVendors } from './utils/dbApi';
+import { createDBOrder, createDBUser, createDBVendor, updateDBOrder, updateDBVendor, createDBInvoice, createDBReview, createDBTicket, createDBFeedback, createDBEscrowPayment, fetchDBUsers, fetchDBOrders, fetchDBVendors } from './utils/dbApi';
 import {
   RestrictionsData,
   RestrictionSettings,
@@ -449,6 +449,20 @@ function DrapinoMain() {
     if (amount <= 0) return;
     const payment = buildEscrowPayment(order, kind, amount);
     setEscrowPayments((prev) => [payment, ...prev]);
+    createDBEscrowPayment({
+      payment_uid: payment.id,
+      order_id: payment.orderId,
+      order_number: payment.orderNumber,
+      vendor_id: payment.vendorId,
+      vendor_name: payment.vendorName,
+      customer_name: payment.customerName,
+      kind: payment.kind,
+      amount: payment.amount,
+      tracking_code: payment.trackingCode,
+      status: payment.status,
+      paid_at: `${payment.paidAt} ${payment.paidTime}`
+    }).catch((e) => console.error(e));
+
     const { date, time } = faNow();
     setOrders((prev) =>
       prev.map((o) =>
@@ -2645,6 +2659,16 @@ function DrapinoMain() {
     };
 
     setTickets((prev) => [createdTicket, ...prev]);
+
+    createDBTicket({
+      ticket_uid: createdTicket.id,
+      ticket_number: ticketNumber,
+      customer_name: newTicketData.customerName,
+      customer_phone: newTicketData.customerPhone,
+      subject: newTicketData.subject,
+      type: newTicketData.type,
+      status: createdTicket.status
+    }).catch((e) => console.error(e));
 
     addNotification({
       type: 'new_request',
