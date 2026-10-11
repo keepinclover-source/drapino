@@ -8,7 +8,7 @@ import path from 'path';
  * - فقط کلیدهای مجاز (پیشوند autopardeh_ یا auto_pardeh_) پذیرفته می‌شوند
  */
 
-export const STATE_KEY_RE = /^(autopardeh_|auto_pardeh_)[A-Za-z0-9_]{1,100}$/;
+export const STATE_KEY_RE = /^(autopardeh_|auto_pardeh_|drapino_)[A-Za-z0-9_]{1,100}$/;
 
 export interface StateEntry {
   value: unknown;

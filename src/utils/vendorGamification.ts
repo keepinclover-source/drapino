@@ -105,7 +105,7 @@ function firstOrdersCount(v: CurtainVendor, orders: VisitRequest[]) {
   const mine = orders.filter(
     (o) =>
       o.assignedVendorId === v.id &&
-      (o.status === 'completed' || o.status === 'delivered' || o.status === 'installed' || Boolean(o.invoice))
+      ((o.status as string) === 'completed' || (o.status as string) === 'delivered' || o.status === 'installed' || Boolean(o.invoice))
   );
   return Math.max(mine.length, v.successfulOrders || 0, v.completedVisits || 0);
 }
@@ -117,7 +117,7 @@ function hasWalletTopUp(v: CurtainVendor) {
   return txs.some(
     (t) =>
       t.type === 'deposit' ||
-      t.type === 'topup' ||
+      (t.type as string) === 'topup' ||
       (typeof t.amount === 'number' && t.amount > 0 && String(t.description || '').includes('شارژ'))
   );
 }

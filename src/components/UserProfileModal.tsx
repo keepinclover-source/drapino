@@ -640,5 +640,5 @@ const UserProfileModalInner: React.FC<UserProfileModalPropsInner> = ({
 export const UserProfileModal: React.FC<UserProfileModalProps> = (props) => {
   // بازگشت زودهنگام باید خارج از کامپوننت اصلی باشد تا تعداد hookها بین رندرها ثابت بماند
   if (!props.isOpen || !props.currentUser) return null;
-  return <UserProfileModalInner {...props} />;
+  return <UserProfileModalInner {...props} currentUser={props.currentUser} />;
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VisitRequest, OrderStatus, UserProfile, VendorReview, SupportTicket, TicketAttachment, CurtainVendor, TicketType } from '../types';
+import { VisitRequest, OrderStatus, UserProfile, VendorReview, SupportTicket, TicketAttachment, CurtainVendor, TicketType, JobApplication } from '../types';
 import { 
   Clock, 
   MapPin, 
@@ -55,6 +55,9 @@ interface CustomerPortalProps {
   onOpenVendorProfile?: (vendorId: string) => void;
   tickets?: SupportTicket[];
   vendors?: CurtainVendor[];
+  jobApplications?: JobApplication[];
+  onUpdateJobApplication?: (id: string, patch: Partial<Pick<JobApplication, 'status' | 'adminNotes'>>) => void;
+  onDeleteJobApplication?: (id: string) => void;
   delayPenalties?: DelayPenalty[]; // جریمه‌های تأخیر اعمال‌شده توسط مدیر (نمایش در فاکتور)
   onCreateTicket?: (ticket: Omit<SupportTicket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt' | 'messages'>, initialMessageText: string) => void;
   onReplyTicket?: (ticketId: string, message: string, attachments?: TicketAttachment[]) => void;

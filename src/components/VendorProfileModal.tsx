@@ -435,5 +435,5 @@ const VendorProfileModalInner: React.FC<VendorProfileModalPropsInner> = ({
 export const VendorProfileModal: React.FC<VendorProfileModalProps> = (props) => {
   // بازگشت زودهنگام باید خارج از کامپوننت اصلی باشد تا تعداد hookها بین رندرها ثابت بماند
   if (!props.isOpen || !props.vendor) return null;
-  return <VendorProfileModalInner {...props} />;
+  return <VendorProfileModalInner {...props} vendor={props.vendor} />;
 };

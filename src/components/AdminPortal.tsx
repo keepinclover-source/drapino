@@ -664,7 +664,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           id: 'buy_box', 
           label: 'مدیریت سقف‌های بای‌باکس', 
           icon: Crown, 
-          badge: buyBoxReservations.filter((r) => r.status === 'active').length ? `${buyBoxReservations.filter((r) => r.status === 'active').length} فعال` : null 
+          badge: buyBoxReservations.filter((r: BuyBoxReservation) => r.status === 'active').length ? `${buyBoxReservations.filter((r: BuyBoxReservation) => r.status === 'active').length} فعال` : null
         },
         { id: 'escrow', label: 'صندوق پرداخت امن (امانی)', icon: ShieldCheck, badge: escrowWithdrawals.filter((w) => w.status === 'processing').length || null },
         { id: 'discount_coupons', label: 'کدهای تخفیف و بن وفاداری', icon: Tag, badge: discountCoupons.length },

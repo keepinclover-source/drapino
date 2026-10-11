@@ -5,6 +5,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createStateStore, isValidStateKey } from './server/stateStore';
+import dbRelational, { initRelationalDatabase } from './server/db';
+
+// راه اندازی پایگاه داده رابطه‌ای (SQLite / PostgreSQL)
+try {
+  initRelationalDatabase();
+  console.log('Relational database initialized successfully.');
+} catch (err) {
+  console.error('Failed initializing relational database:', err);
+}
 
 // بارگذاری متغیرهای محیطی (کلیدهای سرور مثل RECAPTCHA_SECRET_KEY) از .env.local و .env
 dotenv.config({ path: ['.env.local', '.env'] });
@@ -128,7 +137,333 @@ let db = loadDB();
 
 // Health Check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString(), database: 'active' });
+  res.json({ status: 'ok', time: new Date().toISOString(), database: 'relational_active' });
+});
+
+// ==========================================
+// RELATIONAL DB REST API (v1)
+// ==========================================
+app.get('/api/v1/db/users', (_req, res) => {
+  try {
+    const users = dbRelational.prepare('SELECT * FROM users ORDER BY id DESC').all();
+    res.json({ success: true, data: users });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/tickets', (_req, res) => {
+  try {
+    const tickets = dbRelational.prepare('SELECT * FROM support_tickets ORDER BY id DESC').all();
+    res.json({ success: true, data: tickets });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/tickets', (req, res) => {
+  try {
+    const { ticket_uid, ticket_number, customer_name, customer_phone, subject, type, status } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO support_tickets (ticket_uid, ticket_number, customer_name, customer_phone, subject, type, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      ticket_uid || `tck-${Date.now()}`,
+      ticket_number || `TCK-${Math.floor(1000 + Math.random() * 9000)}`,
+      customer_name,
+      customer_phone,
+      subject,
+      type || 'support',
+      status || 'investigating'
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/feedback', (_req, res) => {
+  try {
+    const feedback = dbRelational.prepare('SELECT * FROM feedback_items ORDER BY id DESC').all();
+    res.json({ success: true, data: feedback });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/feedback', (req, res) => {
+  try {
+    const { feedback_uid, code, kind, title, description, section, severity, steps_to_reproduce, author_name, author_role, contact } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO feedback_items (feedback_uid, code, kind, title, description, section, severity, steps_to_reproduce, author_name, author_role, contact)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      feedback_uid || `fb-${Date.now()}`,
+      code || `FB-${Math.floor(1000 + Math.random() * 9000)}`,
+      kind,
+      title,
+      description,
+      section,
+      severity || null,
+      steps_to_reproduce || null,
+      author_name,
+      author_role,
+      contact || null
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/escrow/payments', (_req, res) => {
+  try {
+    const payments = dbRelational.prepare('SELECT * FROM escrow_payments ORDER BY id DESC').all();
+    res.json({ success: true, data: payments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/escrow/payments', (req, res) => {
+  try {
+    const { payment_uid, order_id, order_number, vendor_id, vendor_name, customer_name, kind, amount, tracking_code, status, paid_at } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO escrow_payments (payment_uid, order_id, order_number, vendor_id, vendor_name, customer_name, kind, amount, tracking_code, status, paid_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      payment_uid || `esc-${Date.now()}`,
+      order_id,
+      order_number,
+      vendor_id,
+      vendor_name,
+      customer_name,
+      kind,
+      amount,
+      tracking_code,
+      status || 'held',
+      paid_at || new Date().toISOString()
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/users', (req, res) => {
+  try {
+    const { user_uid, name, phone, email, role, vendor_id, store_name, province, city, district, address, floor_and_unit } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO users (user_uid, name, phone, email, role, vendor_id, store_name, province, city, district, address, floor_and_unit)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      user_uid || `usr-${Date.now()}`,
+      name,
+      phone,
+      email || null,
+      role || 'customer',
+      vendor_id || null,
+      store_name || null,
+      province || 'تهران',
+      city || 'تهران',
+      district || null,
+      address || null,
+      floor_and_unit || null
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/orders', (_req, res) => {
+  try {
+    const orders = dbRelational.prepare('SELECT * FROM visit_requests ORDER BY id DESC').all();
+    res.json({ success: true, data: orders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/orders', (req, res) => {
+  try {
+    const {
+      order_number, customer_name, phone, province, city, district, address, floor_and_unit,
+      rooms_json, approximate_windows, approximate_width_meters, preferred_styles_json,
+      preferred_date, time_slot, notes, deposit_amount, deposit_status
+    } = req.body;
+
+    const stmt = dbRelational.prepare(`
+      INSERT INTO visit_requests (
+        order_number, customer_name, phone, province, city, district, address, floor_and_unit,
+        rooms_json, approximate_windows, approximate_width_meters, preferred_styles_json,
+        preferred_date, time_slot, notes, deposit_amount, deposit_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const info = stmt.run(
+      order_number || `AP-${Math.floor(1000 + Math.random() * 9000)}`,
+      customer_name,
+      phone,
+      province || 'تهران',
+      city || 'تهران',
+      district,
+      address,
+      floor_and_unit || null,
+      typeof rooms_json === 'string' ? rooms_json : JSON.stringify(rooms_json || []),
+      approximate_windows || 1,
+      approximate_width_meters || 3.0,
+      typeof preferred_styles_json === 'string' ? preferred_styles_json : JSON.stringify(preferred_styles_json || []),
+      preferred_date,
+      time_slot,
+      notes || null,
+      deposit_amount || 350000,
+      deposit_status || 'paid'
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/vendors', (_req, res) => {
+  try {
+    const vendors = dbRelational.prepare('SELECT * FROM curtain_vendors ORDER BY id DESC').all();
+    res.json({ success: true, data: vendors });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/vendors', (req, res) => {
+  try {
+    const { vendor_uid, name, owner_name, phone, city, address, covered_districts_json, rating, tier } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO curtain_vendors (vendor_uid, name, owner_name, phone, city, address, covered_districts_json, rating, tier)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      vendor_uid || `vnd-${Date.now()}`,
+      name,
+      owner_name,
+      phone,
+      city,
+      address,
+      typeof covered_districts_json === 'string' ? covered_districts_json : JSON.stringify(covered_districts_json || []),
+      rating || 5.0,
+      tier || 'طلایی'
+    );
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/v1/db/orders/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, assigned_vendor_id, assigned_vendor_name, assigned_vendor_phone } = req.body;
+    const stmt = dbRelational.prepare(`
+      UPDATE visit_requests
+      SET status = COALESCE(?, status),
+          assigned_vendor_id = COALESCE(?, assigned_vendor_id),
+          assigned_vendor_name = COALESCE(?, assigned_vendor_name),
+          assigned_vendor_phone = COALESCE(?, assigned_vendor_phone)
+      WHERE id = ? OR order_number = ?
+    `);
+    stmt.run(status || null, assigned_vendor_id || null, assigned_vendor_name || null, assigned_vendor_phone || null, id, id);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/v1/db/vendors/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, rating_count, wallet_balance, is_verified, tier } = req.body;
+    const stmt = dbRelational.prepare(`
+      UPDATE curtain_vendors
+      SET rating = COALESCE(?, rating),
+          rating_count = COALESCE(?, rating_count),
+          wallet_balance = COALESCE(?, wallet_balance),
+          is_verified = COALESCE(?, is_verified),
+          tier = COALESCE(?, tier)
+      WHERE id = ? OR vendor_uid = ?
+    `);
+    stmt.run(rating ?? null, rating_count ?? null, wallet_balance ?? null, is_verified ?? null, tier || null, id, id);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/coupons', (_req, res) => {
+  try {
+    const coupons = dbRelational.prepare('SELECT * FROM discount_coupons ORDER BY id DESC').all();
+    res.json({ success: true, data: coupons });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/invoices', (_req, res) => {
+  try {
+    const invoices = dbRelational.prepare('SELECT * FROM curtain_invoices ORDER BY id DESC').all();
+    res.json({ success: true, data: invoices });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/invoices', (req, res) => {
+  try {
+    const { order_id, invoice_number, vendor_id, vendor_name, vendor_phone, subtotal, final_payable, issued_at } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO curtain_invoices (order_id, invoice_number, vendor_id, vendor_name, vendor_phone, subtotal, final_payable, issued_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(order_id, invoice_number, vendor_id || null, vendor_name, vendor_phone, subtotal, final_payable, issued_at);
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/reviews', (_req, res) => {
+  try {
+    const reviews = dbRelational.prepare('SELECT * FROM vendor_reviews ORDER BY id DESC').all();
+    res.json({ success: true, data: reviews });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/db/reviews', (req, res) => {
+  try {
+    const { order_id, order_number, vendor_id, customer_name, customer_phone, customer_city, rating, comment, review_date } = req.body;
+    const stmt = dbRelational.prepare(`
+      INSERT INTO vendor_reviews (order_id, order_number, vendor_id, customer_name, customer_phone, customer_city, rating, comment, review_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(order_id || 0, order_number, vendor_id, customer_name, customer_phone, customer_city, rating, comment, review_date);
+    res.status(201).json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/db/job-applications', (_req, res) => {
+  try {
+    const apps = dbRelational.prepare('SELECT * FROM job_applications ORDER BY id DESC').all();
+    res.json({ success: true, data: apps });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // تأیید reCAPTCHA (توکن چک‌باکس گوگل را با کلید محرمانه سرور بررسی می‌کند)
