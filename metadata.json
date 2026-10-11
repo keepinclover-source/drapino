@@ -1,0 +1,8 @@
+{
+  "name": "Remix دراپینو | Drapino",
+  "description": "سامانه هوشمند اعزام فروشگاه و کالیته پرده به منزل - انتخاب، اندازه‌گیری و خرید پرده در خانه",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
