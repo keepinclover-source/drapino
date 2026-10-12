@@ -70,7 +70,7 @@ import { CustomerTermsPage } from './components/CustomerTermsPage';
 import { withSeedAdmin } from './utils/seedAdmin';
 import { DepositProvider } from './context/DepositContext';
 import { resolveCityDeposit } from './utils/deposit';
-import { vendorServesCategory } from './utils/serviceCategory';
+import { vendorServesCategory, getOrderCategory } from './utils/serviceCategory';
 
 import { PortalLoading } from './components/PortalLoading';
 import { detectSurfaceFromHost } from './shared/apiConfig';
@@ -798,8 +798,24 @@ function DrapinoMain() {
     return newCoupon;
   };
 
-  // Orders available for bidding
-  const pendingBidsCount = orders.filter((o) => o.status === 'bidding' || o.status === 're_routed').length;
+  // Orders available for bidding (strictly filtered by vendor city & service category)
+  const pendingBidsCount = orders.filter((o) => {
+    if (o.status !== 'bidding' && o.status !== 're_routed') return false;
+    if (currentRole === 'vendor' && currentVendor) {
+      const vCity = currentVendor.city;
+      const servesCategory = vendorServesCategory(currentVendor, getOrderCategory(o));
+      if (!servesCategory) return false;
+
+      const isSameCity = o.city === vCity;
+      const isCoveredCity = (currentVendor.coveredOtherCities || []).includes(o.city);
+      const isSatellite = (
+        (vCity === 'مشهد' && ['گلبهار', 'چناران', 'کلات', 'روستای لکلک', 'نیشابور', 'طرقبه', 'شاندیز'].includes(o.city)) ||
+        (vCity === 'تهران' && ['پرند', 'پردیس', 'اسلامشهر', 'شهریار', 'ورامین', 'دماوند', 'دماوند و رودهن', 'رودهن', 'بومهن', 'رباط‌کریم', 'پاکدشت', 'قرچک', 'ملارد', 'شهر قدس'].includes(o.city))
+      );
+      return isSameCity || isCoveredCity || isSatellite;
+    }
+    return true;
+  }).length;
 
   // Auth Handlers
   const handleOpenAuthModal = (mode: 'login' | 'register' = 'login', role: UserRole = 'customer') => {
