@@ -8,4 +8,5 @@ coverage/
 !.env.example
 
 # دیتابیس محلی
-data/
+/data/
+!src/data/

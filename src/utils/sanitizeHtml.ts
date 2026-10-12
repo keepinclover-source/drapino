@@ -17,7 +17,7 @@ function isSafeUrl(url: string): boolean {
   if (!trimmed) return false;
 
   // Check if URL specifies a scheme/protocol (e.g. javascript:, data:, http://)
-  const schemeMatch = trimmed.match(/^([a-[z0-9+.-]+):/i);
+  const schemeMatch = trimmed.match(/^([a-z0-9+.-]+):/i);
   if (schemeMatch) {
     const scheme = schemeMatch[1].toLowerCase();
     return scheme === 'http' || scheme === 'https' || scheme === 'mailto' || scheme === 'tel';
