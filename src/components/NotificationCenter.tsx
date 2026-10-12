@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNotifications } from '../context/NotificationContext';
 import { NotificationType, AppNotification } from '../types';
 import { 
@@ -47,6 +47,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   } = useNotifications();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -199,6 +210,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             <button
               onClick={markAllAsRead}
               disabled={unreadCount === 0}
+              aria-label="علامت زدن همه اعلان‌ها به عنوان خوانده شده"
               className="text-stone-600 hover:text-amber-800 font-semibold disabled:opacity-40 flex items-center gap-1 transition-colors"
             >
               <CheckCheck className="w-3.5 h-3.5" />
@@ -208,6 +220,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             <button
               onClick={clearAllNotifications}
               disabled={notifications.length === 0}
+              aria-label="پاکسازی همه اعلان‌ها"
               className="text-stone-400 hover:text-rose-600 font-medium disabled:opacity-30 flex items-center gap-1 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -351,6 +364,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                             onClick={() => deleteNotification(item.id)}
                             className="text-stone-400 hover:text-rose-600 p-1 rounded hover:bg-stone-100 transition-colors"
                             title="حذف این اعلان"
+                            aria-label="حذف این اعلان"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
