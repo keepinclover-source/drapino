@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BlogPost } from '../types';
 import { X, Clock, Calendar, User, Bookmark, Heart, MessageSquare, Send } from 'lucide-react';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 interface BlogPostModalProps {
   post: BlogPost | null;
@@ -104,7 +105,7 @@ export const BlogPostModal: React.FC<BlogPostModalProps> = ({ post, onClose }) =
 
           <div className="space-y-4 text-xs sm:text-sm text-stone-700 leading-loose font-normal">
             {post.contentHtml ? (
-              <div className="prose prose-sm max-w-none text-stone-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
+              <div className="prose prose-sm max-w-none text-stone-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.contentHtml) }} />
             ) : (
               post.content.map((paragraph, idx) => (
                 <p key={idx}>{paragraph}</p>
