@@ -1,0 +1,3 @@
+## 2025-05-10 - SQLite Foreign Key Indexing
+**Learning:** SQLite enables foreign key enforcement (`db.pragma('foreign_keys = ON')`) by default in this server, but SQLite does NOT automatically create indexes on foreign key columns (`assigned_vendor_id`, `order_id`, `vendor_id`, `ticket_id`) or filtered query attributes (`city`, `status`). Without explicit indexes, queries like `SELECT * FROM visit_requests WHERE assigned_vendor_id = ?` or `WHERE city = ?` force full table scans.
+**Action:** Always verify SQLite schema definitions in `server/db.ts` include `CREATE INDEX IF NOT EXISTS` for all foreign key fields and high-cardinality filter fields.
