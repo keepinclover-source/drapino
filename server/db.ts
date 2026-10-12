@@ -371,6 +371,20 @@ export function initRelationalDatabase() {
       status TEXT NOT NULL DEFAULT 'reserved',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    /* Performance optimization: Add indexes for foreign keys and frequently queried fields
+       to eliminate O(N) full table scans during filtered & joined queries. */
+    CREATE INDEX IF NOT EXISTS idx_visit_requests_assigned_vendor ON visit_requests(assigned_vendor_id);
+    CREATE INDEX IF NOT EXISTS idx_visit_requests_status ON visit_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_visit_requests_city ON visit_requests(city);
+    CREATE INDEX IF NOT EXISTS idx_curtain_vendors_city ON curtain_vendors(city);
+    CREATE INDEX IF NOT EXISTS idx_curtain_invoices_order ON curtain_invoices(order_id);
+    CREATE INDEX IF NOT EXISTS idx_curtain_invoices_vendor ON curtain_invoices(vendor_id);
+    CREATE INDEX IF NOT EXISTS idx_vendor_reviews_order ON vendor_reviews(order_id);
+    CREATE INDEX IF NOT EXISTS idx_vendor_reviews_vendor ON vendor_reviews(vendor_id);
+    CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket ON ticket_messages(ticket_id);
+    CREATE INDEX IF NOT EXISTS idx_escrow_payments_order ON escrow_payments(order_id);
+    CREATE INDEX IF NOT EXISTS idx_escrow_payments_vendor ON escrow_payments(vendor_id);
   `);
 
   // Seed default data if operational_cities table is empty
